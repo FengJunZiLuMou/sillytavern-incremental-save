@@ -7,7 +7,8 @@ import express from 'express';
 export const router = express.Router();
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const CACHE_MAX_AGE = 604800; // 7 days in seconds
+const CACHE_MAX_AGE = 30 * 24 * 60 * 60; // 30 days in seconds
+const CACHE_MAX_AGE_MS = CACHE_MAX_AGE * 1000;
 const CACHE_DIR_NAME = 'cache/images';
 
 /** @type {Map<string, Promise<{filePath: string, contentType: string}>>} */
@@ -110,6 +111,23 @@ async function fetchAndCache(url, cacheDir, hash) {
 }
 
 /**
+ * Remove a cached image and its metadata.
+ * @param {string} cacheDir
+ * @param {string} hash
+ */
+function removeCachedFile(cacheDir, hash) {
+    try {
+        for (const file of fs.readdirSync(cacheDir)) {
+            if (file === hash + '.meta.json' || (file.startsWith(hash) && !file.endsWith('.meta.json'))) {
+                fs.rmSync(path.join(cacheDir, file), { force: true });
+            }
+        }
+    } catch {
+        // Best effort cleanup only. A failed cleanup should not block image loading.
+    }
+}
+
+/**
  * Find a cached file by hash (any extension).
  * @param {string} cacheDir
  * @param {string} hash
@@ -123,12 +141,19 @@ function findCachedFile(cacheDir, hash) {
 
     try {
         const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+        const cachedAt = Date.parse(meta.cachedAt || '');
+        if (!cachedAt || Date.now() - cachedAt > CACHE_MAX_AGE_MS) {
+            removeCachedFile(cacheDir, hash);
+            return null;
+        }
+
         const contentType = meta.contentType || 'application/octet-stream';
 
         // Find the actual image file (hash + extension)
         const files = fs.readdirSync(cacheDir);
         const imageFile = files.find(f => f.startsWith(hash) && !f.endsWith('.meta.json'));
         if (!imageFile) {
+            removeCachedFile(cacheDir, hash);
             return null;
         }
 

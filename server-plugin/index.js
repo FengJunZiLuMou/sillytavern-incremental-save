@@ -11,7 +11,8 @@ export const info = {
 };
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
-const IMAGE_CACHE_MAX_AGE = 7 * 24 * 60 * 60;
+const IMAGE_CACHE_MAX_AGE = 30 * 24 * 60 * 60;
+const IMAGE_CACHE_MAX_AGE_MS = IMAGE_CACHE_MAX_AGE * 1000;
 const IMAGE_CACHE_DIR = 'cache/images';
 const inFlightImages = new Map();
 
@@ -178,6 +179,18 @@ function getExtensionFromContentType(contentType) {
     return '';
 }
 
+function removeCachedImage(cacheDir, hash) {
+    try {
+        for (const file of fs.readdirSync(cacheDir)) {
+            if (file === `${hash}.meta.json` || (file.startsWith(hash) && !file.endsWith('.meta.json'))) {
+                fs.rmSync(path.join(cacheDir, file), { force: true });
+            }
+        }
+    } catch {
+        // Best effort cleanup only. A failed cleanup should not block image loading.
+    }
+}
+
 function findCachedImage(cacheDir, hash) {
     const metaPath = path.join(cacheDir, `${hash}.meta.json`);
     if (!fs.existsSync(metaPath)) {
@@ -186,8 +199,15 @@ function findCachedImage(cacheDir, hash) {
 
     try {
         const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+        const cachedAt = Date.parse(meta.cachedAt || '');
+        if (!cachedAt || Date.now() - cachedAt > IMAGE_CACHE_MAX_AGE_MS) {
+            removeCachedImage(cacheDir, hash);
+            return null;
+        }
+
         const file = fs.readdirSync(cacheDir).find(name => name.startsWith(hash) && !name.endsWith('.meta.json'));
         if (!file) {
+            removeCachedImage(cacheDir, hash);
             return null;
         }
 

@@ -57,7 +57,7 @@ enableServerPlugins: true
 
 - 个人聊天增量保存：只追加新消息，失败自动回退全量保存。
 - 群聊增量保存：只追加新消息，失败自动回退全量保存。
-- 外链图片代理缓存：外部图片改写到 `/api/plugins/incremental-save/image-proxy?url=...`，服务端磁盘缓存 7 天。
+- 外链图片代理缓存：外部图片改写到 `/api/plugins/incremental-save/image-proxy?url=...`，服务端磁盘缓存 30 天。
 - 不再需要直接修改 `public/script.js`、`public/scripts/chats.js`、`src/endpoints/chats.js`。
 
 ## 注意
@@ -115,7 +115,7 @@ SillyTavern 的普通“安装扩展”只会安装前端扩展，不会自动�
 ```
 浏览器渲染消息 → 外部图片 URL 自动改写为 /api/image-proxy?url=...
   ↓
-第 1 次请求：服务端下载 → 磁盘缓存 → 返回（Cache-Control: 7天）
+第 1 次请求：服务端下载 → 磁盘缓存 → 返回（Cache-Control: 30天）
 第 2 次请求：服务端读磁盘 → 返回（~8ms）
 第 3+ 次：浏览器本地缓存直接返回（不发请求）
 ```
@@ -124,6 +124,7 @@ SillyTavern 的普通“安装扩展”只会安装前端扩展，不会自动�
 
 - 通过 `HTMLImageElement.prototype.src` setter 拦截 + DOMPurify 钩子双重覆盖，确保所有外部图片（包括扩展通过 `new Image()` 加载的）都走代理
 - SHA256(URL) 作为缓存文件名，存储在 `data/<user>/cache/images/`
+- 命中磁盘缓存时检查 `cachedAt`，超过 30 天会删除旧文件并重新从源站拉取
 - 并发去重：同一 URL 的多个请求只发起一次远程下载
 - 安全限制：仅代理 HTTP/HTTPS，单文件最大 10MB
 
