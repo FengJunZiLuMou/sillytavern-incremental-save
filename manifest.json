@@ -1,0 +1,13 @@
+{
+  "display_name": "Incremental Save / 增量保存",
+  "loading_order": 95,
+  "requires": [],
+  "optional": [],
+  "js": "index.js",
+  "css": "",
+  "author": "ransxd, adapted by FengJunZiLuMou",
+  "version": "2.0.0-st-1.18",
+  "homePage": "https://github.com/FengJunZiLuMou/sillytavern-incremental-save",
+  "auto_update": true,
+  "minimum_client_version": "1.18.0"
+}

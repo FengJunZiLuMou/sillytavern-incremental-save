@@ -1,0 +1,7 @@
+{
+  "name": "sillytavern-incremental-save-server-plugin",
+  "version": "2.0.0",
+  "type": "module",
+  "main": "index.js",
+  "private": true
+}

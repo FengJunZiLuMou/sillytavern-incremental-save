@@ -1,6 +1,76 @@
-# SillyTavern Performance Patches
+# SillyTavern Incremental Save for ST 1.18
 
-SillyTavern 性能优化补丁集，针对大型聊天记录（100MB+、900+ 条消息）场景下的三个核心瓶颈进行优化。
+这是基于 `ransxd/sillytavern-incremental-save` 的 SillyTavern 1.18 适配版。
+
+当前 fork 的目标是：尽量不再直接修改 SillyTavern 核心文件，而是用“前端第三方扩展 + 服务端插件”的方式提供增量保存和外链图片代理缓存。
+
+## 当前结构
+
+```text
+manifest.json              # SillyTavern 前端第三方扩展入口
+index.js                   # 运行时拦截保存请求和外链图片
+server-plugin/index.js     # SillyTavern server plugin，提供文件追加和图片代理
+patches/                   # upstream 原补丁，保留作参考和兼容安装
+new-files/                 # upstream 原新增文件，保留作参考
+docs/ST-1.18-ADAPTATION.md # 适配说明
+```
+
+## 安装方式
+
+### 1. 安装前端扩展
+
+在 SillyTavern 的扩展管理里安装：
+
+```text
+https://github.com/FengJunZiLuMou/sillytavern-incremental-save
+```
+
+### 2. 安装服务端插件
+
+把本仓库放到 SillyTavern 的 `plugins` 目录，并确保 `server-plugin` 里的入口文件能被 ST 加载。
+
+推荐部署形态：
+
+```text
+plugins/sillytavern-incremental-save/
+  package.json
+  index.js
+```
+
+其中 `package.json` 和 `index.js` 来自本仓库的 `server-plugin/` 目录。
+
+也可以在服务器上执行：
+
+```bash
+./install-server-plugin.sh /opt/sillytavern
+```
+
+然后在 `config/config.yaml` 启用：
+
+```yaml
+enableServerPlugins: true
+```
+
+重启 SillyTavern。
+
+## 功能
+
+- 个人聊天增量保存：只追加新消息，失败自动回退全量保存。
+- 群聊增量保存：只追加新消息，失败自动回退全量保存。
+- 外链图片代理缓存：外部图片改写到 `/api/plugins/incremental-save/image-proxy?url=...`，服务端磁盘缓存 7 天。
+- 不再需要直接修改 `public/script.js`、`public/scripts/chats.js`、`src/endpoints/chats.js`。
+
+## 注意
+
+SillyTavern 的普通“安装扩展”只会安装前端扩展，不会自动启用 server plugin。首次部署服务端插件仍需要服务器权限。
+
+更多适配细节见 [docs/ST-1.18-ADAPTATION.md](docs/ST-1.18-ADAPTATION.md)。
+
+---
+
+以下是 upstream 原说明，保留作参考。
+
+# SillyTavern Performance Patches
 
 ## 优化效果
 
