@@ -344,13 +344,13 @@ async function checkServerPlugin() {
             cache: 'no-cache',
             headers: getRequestHeaders(),
         });
-        state.serverReady = response.ok;
+        state.serverReady = response.ok || response.status === 403;
     } catch {
         state.serverReady = false;
     }
 
     if (!state.serverReady) {
-        warnOnce('server plugin is not available; full saves and direct images will be used.');
+        warnOnce('server plugin status check failed; full-save fallback remains available.');
     }
 }
 
