@@ -29,6 +29,30 @@ function readTextFile(filePath) {
     return fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8') : '';
 }
 
+function tryParseJson(value) {
+    try {
+        return JSON.parse(value);
+    } catch {
+        return null;
+    }
+}
+
+function readFirstLine(filePath) {
+    const data = readTextFile(filePath);
+    const firstNewline = data.indexOf('\n');
+    return firstNewline >= 0 ? data.slice(0, firstNewline) : data;
+}
+
+function checkChatIntegrity(filePath, integritySlug) {
+    if (!fs.existsSync(filePath) || !integritySlug) {
+        return true;
+    }
+
+    const jsonData = tryParseJson(readFirstLine(filePath));
+    const currentIntegrity = jsonData?.chat_metadata?.integrity;
+    return !currentIntegrity || currentIntegrity === integritySlug;
+}
+
 async function countJsonlLines(filePath) {
     return new Promise((resolve, reject) => {
         let lineBreaks = 0;
@@ -89,6 +113,10 @@ function backupChat(request, backupName, data) {
 async function appendChatFile(filePath, header, newMessages, expectedLines, request, backupName) {
     if (!fs.existsSync(filePath)) {
         return { ok: false, error: 'file_not_found' };
+    }
+
+    if (!checkChatIntegrity(filePath, header?.chat_metadata?.integrity)) {
+        return { ok: false, error: 'integrity' };
     }
 
     const actualLines = await countJsonlLines(filePath);
