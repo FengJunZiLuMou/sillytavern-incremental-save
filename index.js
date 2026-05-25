@@ -1,5 +1,5 @@
-import { eventSource, event_types, getRequestHeaders } from '../../../script.js';
-import { getStringHash } from '../../utils.js';
+import { eventSource, event_types, getRequestHeaders } from '../../../../script.js';
+import { getStringHash } from '../../../utils.js';
 
 const PLUGIN_BASE = '/api/plugins/incremental-save';
 const IMAGE_PROXY_PATH = `${PLUGIN_BASE}/image-proxy`;
